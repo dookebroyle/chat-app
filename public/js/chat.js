@@ -6,13 +6,34 @@ const $messageFormInput = $messageForm.querySelector('input')
 const $messageFormButton = $messageForm.querySelector('button')
 const $sendLocationButton = document.querySelector('#send-location')
 const $messages = document.querySelector('#messages')
+const $sidebar = document.querySelector('#sidebar')
 
 //Templates
 const messageTemplate = document.querySelector('#message-template').innerHTML
 const locationTemplate = document.querySelector('#location-template').innerHTML
+const sidebarTemplate = document.querySelector('#sidebar-template').innerHTML
 
 //Options
 const {username, room} = Qs.parse(location.search, {ignoreQueryPrefix: true})
+
+//auto scroll the message window viewer
+const autoscroll = () => {
+    //new message element
+    const $newMessage = $messages.lastElementChild
+    //get height of new message = height + margin
+    const newMessageMargin = parseInt(getComputedStyle($newMessage).marginBottom)
+    const newMessageHeight = $newMessage.offsetHeight + newMessageMargin
+    //visible height
+    const visibleHeight = $messages.offsetHeight
+    //height of messages container
+    const containerHeight = $messages.scrollHeight
+    //How far have I scrolled?
+    const scrollOffset = $messages.scrollTop + visibleHeight
+
+    if(containerHeight - newMessageHeight <= scrollOffset) {
+        $messages.scrollTop = $messages.scrollHeight
+    }
+}
 
 //listen for message event from server
 socket.on('message', (message) =>{
@@ -22,6 +43,7 @@ socket.on('message', (message) =>{
         createdAt: moment(message.createdAt).format('h:mm a')
     })
     $messages.insertAdjacentHTML('beforeend', html)
+    autoscroll()
 })
 
 //listen for location message event
@@ -32,6 +54,15 @@ socket.on('locationMessage', (message) => {
         createdAt: moment(message.createdAt).format('h:mm a')
     })
     $messages.insertAdjacentHTML('beforeend', html)
+    autoscroll()
+})
+
+socket.on('roomData', ({room, users}) => {
+    const html = Mustache.render(sidebarTemplate, {
+        room,
+        users
+    })
+    $sidebar.innerHTML = html 
 })
 
 
